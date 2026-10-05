@@ -32,7 +32,9 @@ def ashby(slug):
             continue
         locs = [j.get("location") or ""] + [s.get("location", "") for s in j.get("secondaryLocations") or []]
         loc = "; ".join(l for l in locs if l)
-        if j.get("isRemote") and not re.search(r"remote", loc, re.I):
+        # isRemote can be true on hybrid/on-site postings; trust workplaceType when it says otherwise.
+        wp = (j.get("workplaceType") or "").lower()
+        if j.get("isRemote") and wp not in ("hybrid", "onsite") and not re.search(r"remote", loc, re.I):
             loc += "; Remote"
         comp = (j.get("compensation") or {}).get("compensationTierSummary") or ""
         body = (j.get("descriptionPlain") or "") + " " + comp

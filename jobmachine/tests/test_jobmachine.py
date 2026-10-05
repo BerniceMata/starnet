@@ -97,6 +97,27 @@ class GateTests(unittest.TestCase):
         self.assertEqual(jobq.gate("Revenue Operations Analyst", "Chicago, IL", BODY, "acme")[0], "gate_failed")
 
 
+class AshbyParseTests(unittest.TestCase):
+    def test_hybrid_posting_flagged_remote_is_not_treated_as_remote(self):
+        import ats_sweep
+        board = {"jobs": [
+            {"id": "a", "title": "Revenue Operations Analyst", "location": "Boulder Office",
+             "isRemote": True, "workplaceType": "Hybrid", "descriptionPlain": BODY},
+            {"id": "b", "title": "Revenue Operations Analyst", "location": "United States",
+             "isRemote": True, "workplaceType": "Remote", "descriptionPlain": BODY},
+        ]}
+        real_get = ats_sweep.get
+        ats_sweep.get = lambda url: (200, board)
+        try:
+            _, _, jobs = ats_sweep.ashby("acme")
+        finally:
+            ats_sweep.get = real_get
+        locs = {j["id"]: j["loc"] for j in jobs}
+        self.assertEqual(locs["a"], "Boulder Office")
+        self.assertIn("Remote", locs["b"])
+        self.assertEqual(jobq.gate("Revenue Operations Analyst", locs["a"], BODY, "acme")[0], "gate_failed")
+
+
 class LedgerImportTests(unittest.TestCase):
     def test_import_ledger_reads_urls_and_sets_cooldown(self):
         md = os.path.join(TMP, "log.md")
