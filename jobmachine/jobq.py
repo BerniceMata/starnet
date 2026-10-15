@@ -44,8 +44,17 @@ FAMILIES = [  # (priority, family, title regex) - lower number = higher priority
     (6, "health_ops", r"patient coordinator|care coordinator|clinical coordinator|program coordinator|genetic counseling assistant|patient (access|success)"),
     (7, "tech_sales", r"sales development|business development rep|\bsdr\b|\bbdr\b|associate account executive|account executive|implementation (engineer|specialist|consultant)|solutions consultant|associate solutions architect|onboarding specialist"),
 ]
+# Optional overrides from profile.json so a different candidate can retarget the gate without editing code:
+#   "families": [[priority, "family_name", "title regex"], ...]   replaces FAMILIES
+#   "banned_regex": "..."                                           replaces BANNED
+#   "max_years_required": 3                                         postings asking for more than this many years fail
+if P.get("families"):
+    FAMILIES = [(int(a), str(b), str(c)) for a, b, c in P["families"]]
+MAX_YEARS = int(P.get("max_years_required", 3))
 HEALTH = re.compile(r"health|clinic|medical|patient|care\b|pharma|genomic|diagnost|hospital|provider|payer|ehr|biotech", re.I)
 BANNED = re.compile(r"\b(senior|sr\.?|staff|principal|director|head|manager|lead|leader|vp|vice president|chief|intern|internship|phd|research(er)?|co-?op|technician|qa|quality assurance|backend|back-end|front ?end|full[- ]?stack|software engineer|data scientist|scientist|devops|sre|site reliability|security engineer|ml engineer|machine learning engineer|expression of interest|future (sales )?openings?|all future|talent (pool|community)|contract(or)?|temp|temporary|part[- ]time|1099|prn|seasonal|freelance|m/w/d|bilingual|spanish|portuguese|german|french|japanese|korean|mandarin)\b", re.I)
+if P.get("banned_regex"):
+    BANNED = re.compile(P["banned_regex"], re.I)
 LANG_REQ = re.compile(r"(fluen(t|cy)|native|proficien(t|cy)) in (spanish|portuguese|german|french|japanese|korean|mandarin|italian|dutch)|must speak (spanish|portuguese|german|french)", re.I)
 CITY_IN_TITLE = re.compile(r"\(([A-Z][a-zA-Z .]+),\s*([A-Z]{2})\)")
 HOME_METRO = re.compile(P["home_metro_regex"], re.I)  # the candidate's home metro (on-site/hybrid allowed here)
@@ -119,8 +128,8 @@ def gate(title, loc, body, slug):
         return "gate_failed", fam, pr, "non-English language required", ""
     yrs = [int(m.group(1)) for m in HARD_YEARS.finditer(body) if int(m.group(1)) < 25]
     yrs += [int(x) for x in re.findall(r"(\d{1,2})\+\s*(?:years|yrs)", body, re.I) if int(x) < 25]
-    if yrs and min(yrs) >= 4:
-        return "gate_failed", fam, pr, f"years {min(yrs)}+", ""
+    if yrs and min(yrs) > MAX_YEARS:
+        return "gate_failed", fam, pr, f"years {min(yrs)}+ (max {MAX_YEARS})", ""
     mv = money_vals(body)
     comp = f"{int(min(mv))}-{int(max(mv))}" if mv else ""
     floor = int(P.get("health_ops_comp_floor", 55000)) if fam == "health_ops" else int(P.get("comp_floor_base", 70000))
