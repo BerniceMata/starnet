@@ -11,6 +11,8 @@ from profile import P, fill  # noqa: E402
 UA = "Mozilla/5.0"
 def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
+    if P.get("portfolio_url") and re.search(r"portfolio|personal (web)?site|^website|website url|other website|blog", L) and not re.search(r"user ?name|handle", L):
+        return P["portfolio_url"]
     if re.search(r"github", L):
         return P.get("github_username", "") if re.search(r"user ?name|handle", L) else P.get("github_url", "")
     if re.search(r"twitter|\bx\b handle|x\.com|\bx \(", L):
