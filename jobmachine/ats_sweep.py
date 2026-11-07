@@ -90,7 +90,7 @@ def ingest(c, ats, slug, code, jobs, applied, cooldown, stats):
         if row and row["status"] != "discovered":
             continue
         body = re.sub(r"\s+", " ", j["body"])
-        if j["url"] in applied:
+        if j["url"] in applied or str(j["id"]).lower() in applied:
             st, fam, pr, why, comp = "submitted", None, None, "already in ledger", ""
         else:
             st, fam, pr, why, comp = gate(j["title"], j["loc"], body, slug)
@@ -106,7 +106,8 @@ def ingest(c, ats, slug, code, jobs, applied, cooldown, stats):
 
 
 def ledger_context(c):
-    applied = {r["url"] for r in c.execute("SELECT url FROM ledger")}
+    urls = [r["url"] for r in c.execute("SELECT url FROM ledger")]
+    applied = set(urls) | {jobq.ledger_job_id(u) for u in urls}  # match by URL or by job id
     cooldown = {r["slug"]: r["until"] for r in c.execute("SELECT * FROM cooldown")}
     return applied, cooldown
 

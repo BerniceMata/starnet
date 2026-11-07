@@ -149,5 +149,22 @@ class PrivacyTests(unittest.TestCase):
         self.assertEqual(ex["phone"], "555-555-0100")
 
 
+
+class LedgerIdTests(unittest.TestCase):
+    """Applications recorded as careers-site or odd-form URLs must still block the same job in a sweep."""
+
+    def test_ledger_job_id_forms(self):
+        cases = {
+            "https://job-boards.greenhouse.io/acme/jobs/123": "123",
+            "https://job-boards.greenhouse.io/acme/jobs/123/": "123",
+            "https://job-boards.greenhouse.io/acme/jobs/123?utm_source=x": "123",
+            "https://www.acme.com/careers?gh_jid=4567": "4567",
+            "https://www.elastic.co/careers/x?gh_jid=8048319&gh_jid=8048319": "8048319",
+            "https://jobs.ashbyhq.com/cirrus%20systems/667CD4F9-a2d1-40ac-b2a7-3f6042d8b48d":
+                "667cd4f9-a2d1-40ac-b2a7-3f6042d8b48d",
+        }
+        for url, want in cases.items():
+            self.assertEqual(jobq.ledger_job_id(url), want, url)
+
 if __name__ == "__main__":
     unittest.main()

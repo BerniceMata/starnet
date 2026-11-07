@@ -23,7 +23,7 @@ Commands:
   stats                        metrics funnel
   list <status> [n]            show postings by status
 """
-import json, os, re, sqlite3, sys, html, time, ssl, urllib.request, urllib.error
+import json, os, re, sqlite3, sys, html, time, ssl, urllib.parse, urllib.request, urllib.error
 import concurrent.futures as cf
 from datetime import datetime, timezone, timedelta
 
@@ -240,9 +240,19 @@ def _sweep_board(slug):
     return slug, code, data
 
 
+def ledger_job_id(url):
+    """The ATS job id in a ledger URL. Handles careers-site links (...?gh_jid=123), query strings,
+    trailing slashes and URL-encoded slugs, so an application recorded in any of those forms is still
+    recognised when the same job turns up in a sweep."""
+    g = re.search(r"[?&]gh_jid=(\d+)", url)
+    if g:
+        return g.group(1)
+    return urllib.parse.unquote(url.split("?", 1)[0].split("#", 1)[0].rstrip("/").split("/")[-1]).lower()
+
+
 def sweep_context(c):
     applied = {r["url"] for r in c.execute("SELECT url FROM ledger")}
-    return {"applied_ids": {u.rstrip("/").split("/")[-1] for u in applied},
+    return {"applied_ids": {ledger_job_id(u) for u in applied},
             "cooldown": {r["slug"]: r["until"] for r in c.execute("SELECT * FROM cooldown")},
             "donot": bool(c.execute("SELECT name FROM sqlite_master WHERE name='donot'").fetchone())}
 
