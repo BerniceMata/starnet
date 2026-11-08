@@ -734,6 +734,7 @@ ashby:edsights
 ashby:educationsuperhighway
 ashby:eigen-labs
 ashby:eightsleep
+ashby:ekarobotics
 ashby:ekho
 ashby:ekumenlabs
 ashby:electric
@@ -825,6 +826,7 @@ ashby:felicity
 ashby:felix
 ashby:fellow
 ashby:ferovinum
+ashby:ferryhealth
 ashby:fetch-pet-health
 ashby:ffg
 ashby:fhiaremodeling
@@ -2543,6 +2545,7 @@ ashby:the-exploration-company
 ashby:the-flex
 ashby:the-global-talent-co
 ashby:the-studio
+ashby:theacademysf
 ashby:thebotcompany
 ashby:theorem
 ashby:thera
@@ -2581,6 +2584,7 @@ ashby:topline-pro
 ashby:topologic
 ashby:tortus
 ashby:tourlane
+ashby:town
 ashby:traba
 ashby:tracebit
 ashby:tracelabs
