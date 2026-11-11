@@ -174,6 +174,9 @@ def plan(key):
             pk = pick(opts, re.escape(pa)) or (pick(opts, r"^no\b") if pa == "No" else None)
             if pk:
                 out["fields"].append({"label": label, "type": typ, "required": req, "answer": pk, "options": opts[:12]}); continue
+        if P.get("address_line") and not opts and re.search(r"street address|^address( line 1)?$|mailing address|home address|zip|postal code|^city$", L):
+            a = P["address_zip"] if re.search(r"zip|postal", L) else (P["address_city"] if L == "city" else P["address_line"])
+            out["fields"].append({"label": label, "type": typ, "required": req, "answer": a, "options": []}); continue
         if re.search(r"street address|^address$|mailing address|home address|zip|postal code", L) and req:
             out["blockers"].append(f"needs-address: {label}")
             continue
@@ -193,9 +196,9 @@ def plan(key):
             if opts:
                 ans = pick(opts, r"^1|1-2|0-2|1-3|less than 2|under 2|^0") or None
         if ans is None and re.search(r"hybrid|in[- ]office|on[- ]?site|commute", L):
-            ans = "Yes" if dfw else None
+            ans = "No"
             if opts and ans:
-                ans = pick(opts, r"^yes")
+                ans = pick(opts, r"^no\b")
         if ans is None:
             for rx, a, pref in BANK:
                 if a is None:
