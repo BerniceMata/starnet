@@ -79,6 +79,42 @@ def private_answer(L, opts=None):
         return pick(opts, r"^yes|agree|accept|acknowledge") if opts else "Yes"
     if re.search(r"tobacco|smok|nicotine", L) and P.get("smoke_free"):
         return pick(opts, r"non-?smoker|^yes|agree") if opts else "Yes"
+    if re.search(r"^(legal address - )?state(/province)?\s*\??$|^state of residence", L):
+        return pick(opts, r"^tx$|^texas") if opts else P.get("state", "Texas")
+    if re.search(r"^legal address - city", L):
+        return P.get("city", "Dallas")
+    if re.search(r"^legal address - country|^country of residence", L):
+        return pick(opts, r"^united states$|^united states of america|^usa?$") if opts else "United States"
+    if re.search(r"over the age of 18|at least 18|18 years of age", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"high school diploma|\bged\b", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"desired hourly|hourly (pay|rate)|expected hourly", L) and not opts:
+        return P.get("hourly_text", "")
+    if re.search(r"work eligibility status|citizenship status|work authorization status", L) and opts:
+        return pick(opts, r"u\.?s\.? citizen|citizen")
+    if re.search(r"(current|active) (level of )?security clearance|clearance level", L) and opts:
+        return pick(opts, r"^none|no clearance|^n/?a|^no\b")
+    if re.search(r"hereby certify|i (verify|certify|attest) that|true,? (complete|accurate) and correct|information .{0,40}is true", L):
+        return pick(opts, r"acknowledge|agree|^yes|certify|true") if opts else "Yes"
+    if re.search(r"employment is at will|at-will", L) and opts:
+        return pick(opts, r"^yes|agree|understand|acknowledge")
+    if re.search(r"performed from within the united states|lived in the united states for at least", L):
+        return pick(opts, r"agree|^yes") if opts else "Yes"
+    if re.search(r"attendance requirements|able to meet the (schedule|attendance)", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"(rn|lpn|registered nurse|nursing) (license|certification)|do you have an? (rn|lpn)", L) and opts:
+        return pick(opts, r"^no\b")
+    if re.search(r"share your resume.{0,60}(clients|prospective)", L) and opts:
+        return pick(opts, r"^yes")
+    if re.search(r"(apis?|rest|webhooks?)\b.{0,40}(experience|familiar)|experience .{0,40}(rest|webhooks|apis)\b", L) and opts:
+        return pick(opts, r"^yes")
+    if re.search(r"(currently|ever been|previously been) (employed|work(ed)?) (by|at|for)|do you currently work at", L) and opts:
+        return pick(opts, r"^no\b|not applicable|^n/?a|never")
+    if re.search(r"(family|relative)s?.{0,60}(work(ing)?|employed) (for|at|by)", L) and opts:
+        return pick(opts, r"^no\b|not applicable|^n/?a")
+    if re.search(r"when can you begin|begin (full-time )?work|available to begin", L) and not opts:
+        return "Immediately"
     if re.search(r"\brefer(red|ral)?\b", L) and re.search(r"name|who|indicate|relationship", L) and not opts:
         return "N/A"
     if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city), state\s*\??$", L):
