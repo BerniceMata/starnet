@@ -1,0 +1,73 @@
+{
+  "_note": "CYBER / GRC candidate template. Copy to profile.json (git-ignored) and replace every value with your own true facts. Leave a key empty and the machine will HOLD any form that needs it instead of guessing. Never put anything here you would not put on a real application.",
+
+  "first_name": "",
+  "last_name": "",
+  "email": "",
+  "phone": "",
+  "linkedin_url": "",
+  "github_url": "",
+  "github_username": "",
+  "pronouns": "",
+
+  "city": "",
+  "state": "",
+  "state_abbr": "",
+  "country": "United States",
+  "timezone": "",
+  "home_metro_regex": "(?!x)x",
+  "_home_metro_note": "(?!x)x never matches, which makes the gate REMOTE-ONLY. To also allow on-site in your city, use something like \\b(portland|beaverton|hillsboro)\\b",
+
+  "current_employer": "",
+  "current_title": "",
+  "degree_level": "Master's",
+  "degree_short": "Masters",
+  "major": "",
+  "nationality": "",
+  "citizenship_option": "",
+
+  "work_authorized": "Yes",
+  "needs_sponsorship": "No",
+  "us_citizen": "Yes",
+  "over_18": "Yes",
+  "willing_to_relocate": "No",
+  "willing_to_travel": "Yes",
+  "background_check_ok": "Yes",
+  "security_clearance": "No",
+  "vc_pe_backed_employers": "",
+  "vacation_next_month": "",
+
+  "years_similar": "",
+  "years_similar_text": "",
+  "ai_familiarity": "",
+  "availability": "Available with two weeks' notice.",
+  "how_heard": "Company website",
+
+  "salary_text": "",
+  "salary_number": "",
+  "comp_floor_base": 125000,
+  "comp_floor_ote": 125000,
+  "health_ops_comp_floor": 125000,
+  "fallback_comp_floor": 125000,
+
+  "max_years_required": 20,
+
+  "families": [
+    [1, "grc", "\\bgrc\\b|governance,? risk|risk (and|&) compliance|security compliance|compliance (analyst|manager|lead|specialist|engineer|program)|fedramp|soc ?2|iso ?27001|nist|cmmc|hitrust|\\bpci\\b|it audit|audit (analyst|manager)|third[- ]party risk|vendor risk|\\btprm\\b"],
+    [2, "cyber_risk", "cyber ?(security )?risk|information security (analyst|officer|manager|lead|specialist)|\\bisso\\b|\\bissm\\b|\\bissm\\b|vulnerability management|security (assessment|assurance|program|risk) (analyst|manager|lead)?|cyber ?security (analyst|operations|lead|manager|specialist|consultant|advisor)|infosec|security (and|&) compliance"],
+    [3, "secops", "security operations|\\bsoc\\b (analyst|lead|manager)|incident response|threat (analyst|intel)|detection (engineer|analyst)"]
+  ],
+
+  "banned_regex": "\\b(intern|internship|phd|co-?op|technician|backend|back-end|front ?end|full[- ]?stack|software engineer|data scientist|devops|sre|ml engineer|machine learning engineer|expression of interest|future (openings?|roles?)|all future|talent (pool|community)|part[- ]time|prn|seasonal|freelance|director|vp|vice president|chief|ciso|m/w/d|bilingual|spanish|portuguese|german|french|japanese|korean|mandarin)\\b",
+
+  "eeo": {
+    "_note": "Optional. If you leave these out the machine selects 'decline to answer'. Fill only if you want to answer. Each value is a regex matched against the option text.",
+    "gender": "",
+    "hispanic": "",
+    "race": "",
+    "veteran": "",
+    "disability": ""
+  },
+
+  "resume_path": "data/resume.pdf"
+}
