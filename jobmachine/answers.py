@@ -66,12 +66,64 @@ def private_answer(L, opts=None):
         return "Yes"
     if re.search(r"commit (to )?(this role )?full[- ]time|exclusive(ly)? employ|devote full|screen monitoring|keystroke|activity monitoring", L):
         return "Yes"
+    if re.search(r"(able|willing) to travel up to \d+ ?%", L):
+        return pick(opts, r"^yes") if opts else "Yes"
     if re.search(r"(what|how much).{0,30}(percent|%).{0,20}travel|travel.{0,30}(percent|%)", L) and not opts:
         return P.get("max_travel", "")
     if re.search(r"driver'?s licen[sc]e", L):
         return P.get("drivers_license", "")
     if re.search(r"reliable (transportation|vehicle)|own (a )?(car|vehicle)|access to a (car|vehicle)", L):
         return P.get("own_car", "")
+    if re.search(r"countr(y|ies).{0,40}(reside|live|located|based|anticipate working)|^country$|countries you anticipate", L):
+        return pick(opts, r"^united states|^usa?$|^us\b") if opts else "United States"
+    if re.search(r"(current|previous|most recent) (job )?title", L):
+        return P.get("current_title", "")
+    if re.search(r"export control|authori[sz]ation status|u\.?s\.? persons?", L) and opts and any(re.search(r"u\.?s\.? citizen", o, re.I) for o in opts):
+        return pick(opts, r"^u\.?s\.? citizen|^citizen|u\.?s\.? citizen")
+    if re.search(r"sanctions|export control", L) and opts:
+        return pick(opts, r"none of the above|not applicable|^none|^no\b") or ""
+    if re.search(r"if you selected a response to the prior question other than", L):
+        return pick(opts, r"none|not applicable|n/?a") if opts else "N/A"
+    if re.search(r"work authori[sz]ation status|citizenship status|immigration status", L):
+        return pick(opts, r"citizen|authorized to work|no sponsorship") if opts else "US citizen, authorized to work in the US without sponsorship"
+    if re.search(r"(describe|explain).{0,60}(revenue cycle|medical (billing|coding)|insurance billing|claims|prior auth)", L) and not opts:
+        return ("No dedicated revenue cycle or coding role yet. Four years as a medical assistant across internal medicine, pulmonology, "
+                "orthopedics and sports medicine handling patient intake, documentation and care coordination in Epic and eClinicalWorks, "
+                "plus a B.S. in Healthcare Studies. I also built Before You Pay, a medical bill rights checker built on CMS data covering "
+                "itemized bills, financial assistance and surprise-bill protections.")
+    if re.search(r"^i certify|certify that the information|attest that", L):
+        return pick(opts, r"^yes|i certify|agree|acknowledge|confirm") if opts else "Yes"
+    if re.search(r"authori[sz]ed to (reside|live) and work|in the (us|u\.s\.|united states) right now", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"what city (&|and) state|city and state do you (live|reside)|^city,? state", L):
+        return f"{P.get('address_city', '')}, {P.get('state_abbr', 'TX')}"
+    if re.search(r"open to travel|willing to travel|able to travel", L) and not re.search(r"percent|%|how much", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"^what is your preferred name|^preferred name", L):
+        return P.get("first_name", "")
+    if re.search(r"(do you have|list).{0,20}certifications", L):
+        return pick(opts, r"none|^no\b|not applicable") if opts else "No"
+    if re.search(r"agentic ai (experience|tools)|agentic (ai )?(tools|workflows).{0,40}(built|implemented)", L) and not opts:
+        return ("Three I built and run: Milo, a multi-agent system where one Chief routes work to 18 specialist bots across four rooms "
+                "(Python, Claude, pytest, 62 skills); Cami, a Slack assistant on Claude for Accomplishr that answers staff questions from a "
+                "knowledge page, runs a second search when needed and escalates what it can't answer, with an evaluation harness; and an "
+                "operations bot at HostraGroup with an hourly sweep across 8 data sources and a 6-verdict classifier graded by a 67-case eval "
+                "suite. I can demo Milo's routing and Cami's eval harness live.")
+    if re.search(r"client-facing experience|translate business requirements into technical", L) and not opts:
+        return ("Yes. At HostraGroup I run discovery calls with homeowners and turn what they need into the onboarding pipeline and "
+                "automations behind it (500+ leads, 45+ signed agreements). At Accomplishr I build AI tools like Cami from what staff and "
+                "experts ask for, and train teammates on AI tools in group sessions and one-on-one.")
+    if re.search(r"proficien|skill level|rate your|level of (experience|expertise|comfort)|how (comfortable|experienced)", L):
+        pf = P.get("proficiency") or {}
+        if pf.get("none") and re.search(pf["none"], L):
+            if not opts:
+                return "None"
+            o = pick(opts, r"^none|no experience|not familiar|^0|never")
+            return o or ""
+        if pf.get("intermediate") and re.search(pf["intermediate"], L):
+            if not opts:
+                return "Intermediate"
+            return pick(opts, r"intermediate|proficient|moderate|^3\b|comfortable") or ""
     if re.search(r"\bgpa\b|grade point", L):
         return P.get("gpa", "")
     if P.get("portfolio_url") and re.search(r"portfolio|personal (web)?site|^website|website url|other website|blog", L) and not re.search(r"user ?name|handle", L):
@@ -241,12 +293,13 @@ def plan(key):
             if pk:
                 out["fields"].append({"label": label, "type": typ, "required": req, "answer": pk, "options": opts[:12]}); continue
         if P.get("address_line") and not opts and re.search(r"street address|^address( line 1)?$|mailing address|home address|zip|postal code|^city$", L):
-            a = P["address_zip"] if re.search(r"zip|postal", L) else (P["address_city"] if L == "city" else P["address_line"])
+            full = f'{P["address_line"]}, {P["address_city"]}, {P.get("state_abbr", "TX")} {P["address_zip"]}'
+            a = full if re.search(r"full address|street,? city|address.{0,20}city.{0,20}(state|zip)", L) else P["address_zip"] if re.search(r"zip|postal", L) else (P["address_city"] if L == "city" else (full if L in ("address", "home address", "mailing address") else P["address_line"]))
             out["fields"].append({"label": label, "type": typ, "required": req, "answer": a, "options": []}); continue
         if re.search(r"street address|^address$|mailing address|home address|zip|postal code", L) and req:
             out["blockers"].append(f"needs-address: {label}")
             continue
-        if re.search(r"years", L) and re.search(r"how many|number of|years of|years'? experience", L):
+        if re.search(r"years", L) and re.search(r"how many|number of|years of|years'? experience", L) and not re.search(r"describe|explain|tell us", L):
             n = years_for(L)
             if n is not None:
                 ans = (pick_years(opts, n) if opts else str(n))
