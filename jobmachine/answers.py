@@ -71,8 +71,10 @@ def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
-    if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city)(, state)?\s*\??$", L):
+    if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city), state\s*\??$", L):
         return P.get("location_short", "Dallas, TX")
+    if re.fullmatch(r"\s*(current )?city\s*\??", L):
+        return P.get("city", "Dallas")
     if re.search(r"comfortable with the location requirement|able to meet the location requirement", L):
         return "Yes"
     if re.search(r"legally (eligible|authorized|able) (for|to) (employment|work)", L):
@@ -124,6 +126,13 @@ def private_answer(L, opts=None):
         return P.get("first_name", "")
     if re.search(r"(do you have|list).{0,20}certifications", L):
         return pick(opts, r"none|^no\b|not applicable") if opts else "No"
+    if re.search(r"(where|how) have you (experimented|used|applied) (with )?(ai|it|llms?|generative ai)|(experience|experimented) (with|using) (ai|generative ai|llms?) (in|for) your (own )?work|how do you use ai", L) and not opts:
+        return ("I use AI every day to do the work, not just to talk about it. At HostraGroup I built an operations bot that sweeps 8 data "
+                "sources every hour and sorts each issue into one of 6 verdicts, graded against a 67-case eval suite so I know when it is wrong. "
+                "At Accomplishr I built Cami, a Slack assistant on Claude that answers staff questions from a knowledge page and escalates what "
+                "it can't answer. Where it falls short is anything without a clear source of truth: it guesses confidently, so I put evals and a "
+                "human check on anything that touches a customer or a number. In a role like this, the biggest impact is on the repetitive "
+                "reporting and data-cleanup work, so people spend their time on the decisions instead of the spreadsheets.")
     if re.search(r"agentic ai (experience|tools)|agentic (ai )?(tools|workflows).{0,40}(built|implemented)", L) and not opts:
         return ("Three I built and run: Milo, a multi-agent system where one Chief routes work to 18 specialist bots across four rooms "
                 "(Python, Claude, pytest, 62 skills); Cami, a Slack assistant on Claude for Accomplishr that answers staff questions from a "
@@ -246,7 +255,7 @@ BANK = [
     (r"english", "Native / fluent", r"native||c2||fluent||excellent||^yes"),
     (r"salesforce|sales navigator|power ?bi|tableau|power automate|power apps|microsoft 365", "Yes", r"^yes"),
     (r"contract|1099|part[- ]time|temporary|freelance", "<<contract_ok>>", r"^yes"),
-    (r"(work|available|comfortable|willing).{0,60}(time ?zones?|eastern|pacific|est\b|pst\b|overlap)", "<<other_timezones_ok>>", r"^yes"),
+    (r"(work|available|comfortable|willing).{0,60}(time ?zones?|eastern hours|pacific hours|\b(est|pst|et|pt)\b hours|overlap with)", "<<other_timezones_ok>>", r"^yes"),
     (r"night|weekend|evening|overnight|shift", "<<nights_weekends_ok>>", r"^yes"),
     (r"years of (experience|b2b|saas)|how many years", None, None),  # handled specially below
     (r"remote", "Yes", r"^yes"),
@@ -356,6 +365,10 @@ def plan(key):
             if req:
                 out["unknown"].append({"label": label, "type": typ, "options": opts[:12]})
             continue
+        if typ == "textarea" and str(ans).strip().lower() in ("yes", "no") and not re.search(r"^(are|do|did|have|has|is|will|would|can|could)\b", L):
+            if req:
+                out["unknown"].append({"label": label, "type": typ, "options": []})
+            continue  # an essay question never gets a bare Yes/No
         out["fields"].append({"label": label, "type": typ, "required": req, "answer": ans, "options": opts[:12]})
     # demographic/compliance blocks (Greenhouse 'compliance' + 'demographic_questions') are optional: EEO answers applied in-browser
     return out
