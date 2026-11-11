@@ -69,6 +69,8 @@ def salary_answer(L):
 
 def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
+    if re.search(r"(contractual obligations|non-?compete|restrictive covenant).{0,80}(impact|impede|interfere|prevent|restrict)", L):
+        return pick(opts, r"^no\b") if opts else "No"
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
     if re.search(r"(record|notetaker|transcri).{0,60}interview|interview.{0,60}(record|notetaker|transcri)", L) and P.get("ai_interview_recording_ok"):
@@ -79,6 +81,10 @@ def private_answer(L, opts=None):
         return pick(opts, r"^yes|agree|accept|acknowledge") if opts else "Yes"
     if re.search(r"tobacco|smok|nicotine", L) and P.get("smoke_free"):
         return pick(opts, r"non-?smoker|^yes|agree") if opts else "Yes"
+    if re.search(r"deemed export|export licen[cs]e|ear[- ]controlled|itar", L) and opts:
+        return pick(opts, r"^yes")  # US citizen: meets export-control requirements
+    if re.search(r"confirm (your )?understanding|i understand that|acknowledge that this role requires", L) and opts:
+        return pick(opts, r"^yes|agree|understand|acknowledge|confirm")
     if re.search(r"^(legal address - )?state(/province)?\s*\??$|^state of residence", L):
         return pick(opts, r"^tx$|^texas") if opts else P.get("state", "Texas")
     if re.search(r"^legal address - city", L):
