@@ -88,7 +88,9 @@ def private_answer(L, opts=None):
     if re.search(r"^(legal address - )?state(/province)?\s*\??$|^state of residence", L):
         return pick(opts, r"^tx$|^texas") if opts else P.get("state", "Texas")
     if re.search(r"^legal address - city", L):
-        return P.get("city", "Dallas")
+        return P.get("address_city", P.get("city", "Dallas"))
+    if re.search(r"(street )?address (line )?2|address 2|apt|suite|unit number", L) and not opts:
+        return ""
     if re.search(r"^legal address - country|^country of residence", L):
         return pick(opts, r"^united states$|^united states of america|^usa?$") if opts else "United States"
     if re.search(r"over the age of 18|at least 18|18 years of age", L):
@@ -286,7 +288,7 @@ BANK = [
     (r"willing to travel|travel to", "<<willing_to_travel>>", r"^<<willing_to_travel_rx>>"),
     (r"background check|drug (screen|test)", "<<background_check_ok>>", r"^<<background_check_ok_rx>>"),
     (r"(previously|ever) (been )?(employed|worked)|worked (here|for|at) .{0,40}before|former employee|interviewed (here|with)|currently employed by|employed (at|with|by) .{0,30}(in the past|previously|for any length)|have you ever worked for", "No", r"^no\b|have not|never"),
-    (r"how did you (initially |first )?(hear|learn|find|come across)|where (did|have) you (hear|learn|find)|^source$|referral source|how .{0,20}hear about", "<<how_heard>>", r"^(other )?job board|online job|job (search|posting) (site|board)||company (web)?site|careers? (site|page)|website||^linkedin||^other$"),
+    (r"how did you (initially |first )?(hear|learn|find|come across)|where (did|have) you (hear|learn|find)|^source$|referral source|how .{0,20}hear about", "<<how_heard>>", r"^(other )?job board|online job|job (search|posting) (site|board)||company (web)?site|careers? (site|page)|website||^other$||^linkedin"),
     (r"\breferr|know anyone (who|that) (currently )?works|relatives currently employed|family members", "No", r"^no\b|n/?a"),
     (r"familiarity with (artificial intelligence|ai)|rate your .{0,30}(ai|artificial intelligence)", "<<ai_familiarity>>", r"^<<ai_familiarity_rx>>\b"),
     (r"where are you based out of", "Other US city", r"other us city|<<city_rx>>|<<state_rx>>|united states"),
