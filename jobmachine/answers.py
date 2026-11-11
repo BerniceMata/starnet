@@ -109,7 +109,7 @@ def private_answer(L, opts=None):
         return pick(opts, r"^yes")
     if re.search(r"(apis?|rest|webhooks?)\b.{0,40}(experience|familiar)|experience .{0,40}(rest|webhooks|apis)\b", L) and opts:
         return pick(opts, r"^yes")
-    if re.search(r"(currently|ever been|previously been) (employed|work(ed)?) (by|at|for)|do you currently work at", L) and opts:
+    if re.search(r"(currently|ever been|previously been) (employed|work(ed)?) (by|at|for)|do you currently work at|currently an? (employee|contractor)", L) and opts:
         return pick(opts, r"^no\b|not applicable|^n/?a|never")
     if re.search(r"(family|relative)s?.{0,60}(work(ing)?|employed) (for|at|by)", L) and opts:
         return pick(opts, r"^no\b|not applicable|^n/?a")
@@ -300,7 +300,7 @@ BANK = [
     (r"computer science degree|degree in computer science", "No", r"^no\b"),
     (r"english", "Native / fluent", r"native||c2||fluent||excellent||^yes"),
     (r"salesforce|sales navigator|power ?bi|tableau|power automate|power apps|microsoft 365", "Yes", r"^yes"),
-    (r"contract|1099|part[- ]time|temporary|freelance", "<<contract_ok>>", r"^yes"),
+    (r"(open|willing|interested|consider|available|okay|ok)\b.{0,40}(contract|1099|part[- ]time|temporary|freelance)|(contract|1099|temporary|freelance) (role|position|basis|work|engagement)", "<<contract_ok>>", r"^yes"),
     (r"(work|available|comfortable|willing).{0,60}(time ?zones?|eastern hours|pacific hours|\b(est|pst|et|pt)\b hours|overlap with)", "<<other_timezones_ok>>", r"^yes"),
     (r"night|weekend|evening|overnight|shift", "<<nights_weekends_ok>>", r"^yes"),
     (r"years of (experience|b2b|saas)|how many years", None, None),  # handled specially below
@@ -373,7 +373,8 @@ def plan(key):
             out["fields"].append({"label": label, "type": typ, "required": req, "answer": pa, "options": []})
             continue
         if pa and opts:
-            pk = pick(opts, re.escape(pa)) or (pick(opts, r"^no\b") if pa == "No" else None)
+            pk = (pick(opts, "^" + re.escape(pa) + "$") or pick(opts, r"\b" + re.escape(pa) + r"\b")
+                  or (pick(opts, r"^no\b") if pa == "No" else None))  # exact first: "US" must not match "Australia"
             if pk:
                 out["fields"].append({"label": label, "type": typ, "required": req, "answer": pk, "options": opts[:12]}); continue
         if P.get("address_line") and not opts and re.search(r"street address|^address( line 1)?$|mailing address|home address|zip|postal code|^city$", L):
