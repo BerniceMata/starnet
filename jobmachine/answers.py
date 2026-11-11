@@ -18,6 +18,8 @@ YEARS = [
     (r"salesforce|marketo|pardot|eloqua|netsuite|workday|tableau|power ?bi|looker", 0),
     (r"health|medical|patient|clinical|ehr|emr|epic|provider", 4),
     (r"\bai\b|artificial intelligence|llm|automation|python|sql|data analy|analytics|prompt|machine learning", 5),
+    (r"software (engineering|development)|professional (software|engineering)|production code", 1),
+    (r"quota|closing|full[- ]cycle sales|b2b sales|closing deals", 3),
     (r"crm|rev ?ops|revenue operations|sales operations|operations|hubspot|gohighlevel|airtable", 0),
     (r"sales|business development|\bsdr\b|\bbdr\b|outbound|prospecting|closing", 3),
     (r"total|professional|work experience|relevant experience|overall", 5),

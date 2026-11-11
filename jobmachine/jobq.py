@@ -42,6 +42,8 @@ FAMILIES = [  # (priority, family, title regex) - lower number = higher priority
     (4, "ops", r"revenue operations|\brevops\b|sales operations|sales ops|marketing operations|marketing ops|business operations|deal desk|\bcrm\b|gtm operations|growth operations|sales enablement|revenue analyst|gtm analyst"),
     (5, "lifecycle", r"deliverability|lifecycle|marketing automation|email (operations|marketing|infrastructure)|campaign operations"),
     (6, "health_ops", r"patient coordinator|care coordinator|clinical coordinator|program coordinator|genetic counseling assistant|patient (access|success)"),
+    (3, "ai_trainer", r"ai (trainer|tutor|evaluator|rater|writing evaluator|data trainer|data specialist)|rlhf|data annotat|annotation (specialist|analyst)|model evaluator|ai training (specialist|associate)|(coding|math|stem|writing|healthcare|medical) expert.{0,25}\bai\b|\bai\b.{0,25}(coding|healthcare|medical) expert"),
+    (3, "entry_swe", r"(junior|jr\.?|entry[- ]level|new grad|early career|associate|graduate)\b.{0,25}(software|full[- ]?stack|backend|back[- ]end|frontend|front[- ]end|web|python|ai|automation) (engineer|developer)|(software|python|ai) (engineer|developer)\s*(i|1)\b|software (engineer|developer),? (new grad|early career|entry)"),
     (5, "data_analyst", r"data analyst|business analyst|reporting analyst|operations analyst|(?:bi|business intelligence|analytics|healthcare|clinical data|quality|data quality) analyst|analytics associate|data operations"),
     (4, "heads_down", r"power ?bi|power platform|power automate|power apps|microsoft 365|\bm365\b|sharepoint|dynamics 365|business systems analyst|\bsystems analyst|crm (administrator|admin|analyst|specialist)|hubspot (admin|administrator|specialist)|automation (specialist|analyst)|workflow automation|reporting (analyst|specialist)|technical writer|documentation specialist|knowledge (base|management)|qa analyst|data quality|implementation analyst|solutions analyst|it operations analyst|business intelligence"),
     (6, "hc_admin", r"revenue cycle|patient access|prior auth|authorization specialist|insurance verification|patient account|medical billing|billing specialist|claims (?:specialist|analyst|representative|processor)|credentialing|care navigator|patient advocate|patient (?:services|support) (?:specialist|representative)|healthcare operations|clinical operations (?:associate|specialist|coordinator)|(?:referral|intake|scheduling) (?:coordinator|specialist)"),
@@ -78,6 +80,7 @@ def track_of(fam):
     return "B" if fam in TRACK_B else "A"
 # "Manager" titles that do not mean managing people (pack section 03).
 ALLOWED_MANAGER = re.compile(r"\b(account|customer success|client success|project|program|implementation|product operations) manager\b", re.I)
+SENIOR_ONLY = re.compile(r"\b(senior|sr\.?|staff|principal|director|head|manager|lead|vp|vice president|chief|intern|internship|phd|ii|iii|iv)\b", re.I)
 NEVER_COMPANIES = re.compile(r"hostra|accomplishr", re.I)
 ONSITE_BODY = re.compile(r"\bhybrid\b|\b\d (?:days?|x) (?:a|per) week (?:in|at) (?:the|our) office|in[- ]office (?:\d|required|expectation)|(?:on[- ]?site|in[- ]person) (?:\d|required|presence)|must (?:be able to )?commute|commutable to|within commuting distance", re.I)
 NEGATED_ONSITE = re.compile(r"not (?:a )?hybrid|no (?:office|commute)|fully remote|100% remote", re.I)
@@ -125,7 +128,7 @@ def location_gate(loc, title=""):
     return False, "on-site/hybrid outside home metro"
 
 
-FALLBACK_COMP = int(P.get("fallback_comp_floor", 90000))  # stated pay needed before a sales-fallback role is considered
+FALLBACK_COMP = int(P.get("sales_comp_floor", 50000))
 
 
 def gate(title, loc, body, slug):
@@ -135,7 +138,13 @@ def gate(title, loc, body, slug):
         return "gate_failed", None, None, "not a target family", ""
     if NEVER_COMPANIES.search(slug):
         return "gate_failed", fam, pr, "never apply: own employer", ""
-    if BANNED.search(ALLOWED_MANAGER.sub("", title)):
+    if fam == "entry_swe":
+        bad = SENIOR_ONLY.search(title)
+    elif fam == "ai_trainer":
+        bad = SENIOR_ONLY.search(title)  # contract, freelance and part-time are fine for AI training work
+    else:
+        bad = BANNED.search(ALLOWED_MANAGER.sub("", title))
+    if bad:
         return "gate_failed", fam, pr, "title seniority/banned word", ""
     ok, why = location_gate(loc, title)
     if not ok:
@@ -167,7 +176,7 @@ def gate(title, loc, body, slug):
         pr = 2 if fam == "ops" else 1
     if fam == "tech_sales":
         # fallback lane: deterministic pre-screen, then Opus judgment
-        if yrs and min(yrs) >= 3 and re.search(r"quota|closing|closed|full[- ]cycle", body, re.I):
+        if yrs and min(yrs) >= 4 and re.search(r"quota|closing|closed|full[- ]cycle", body, re.I):
             return "gate_failed", fam, pr, "3+ yrs quota/closing required", comp
         if COLD_CALL_MILL.search(body):
             return "gate_failed", fam, pr, "high-volume cold-calling role", comp
