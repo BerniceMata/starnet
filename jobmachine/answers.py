@@ -60,7 +60,10 @@ def salary_answer(L):
         return ""  # hold: pack says OTE/commission/hourly/current pay wording needs Mitchell
     floor = int((P.get("track_floors") or {}).get(track_of(CTX["fam"]) if CTX["fam"] else "B", 100000))
     mv = money_vals(CTX["body"])
-    n = max(floor, int(round((min(mv) + max(mv)) / 2, -3))) if mv else floor
+    if not mv:  # no posted range: ask for a market band instead of the bare floor
+        lo = int(P.get("salary_no_range_low", max(floor, 60000)))
+        return f"${lo:,} to ${int(lo * 1.25 // 1000 * 1000):,}, flexible for the right role"
+    n = max(floor, int(round((min(mv) + max(mv)) / 2, -3)))
     return f"${n:,}"
 
 
