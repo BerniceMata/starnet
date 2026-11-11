@@ -69,7 +69,7 @@ def salary_answer(L):
 
 def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
-    if re.search(r"(contractual obligations|non-?compete|restrictive covenant).{0,80}(impact|impede|interfere|prevent|restrict)", L):
+    if re.search(r"(contractual obligations|non-?compete|restrictive covenant).{0,200}(impact|impede|interfere|prevent|restrict)", L):
         return pick(opts, r"^no\b") if opts else "No"
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
@@ -301,7 +301,7 @@ BANK = [
     (r"salary|compensation expectation|expectations for total compensation|total compensation|desired (salary|pay|compensation)|pay expectation", SALARY_TEXT, r"70|75|80"),
     (r"start date|when can you (start|join)|available to (start|join)|by when can you join|earliest start", "<<availability>>", r"immediate|2 weeks|two weeks"),
     (r"(sms|text message|whatsapp|talent community|job alerts|marketing communications)", "No", r"^no\b|opt out|do not"),
-    (r"privacy|acknowledge|consent|agree|i have read|recording|ai (policy|in (the )?interview)|terms", "Acknowledge", r"acknowledge|agree|yes|i consent|confirm|accept"),
+    (r"privacy|acknowledge|consent|\bagree\b|i have read|recording|ai (policy|in (the )?interview)|\bterms\b", "Acknowledge", r"acknowledge|agree|yes|i consent|confirm|accept"),
     (r"bachelor'?s degree|4-year degree|undergraduate degree|highest level of education", "<<degree_level>>", r"bachelor|yes"),
     (r"computer science degree|degree in computer science", "No", r"^no\b"),
     (r"english", "Native / fluent", r"native||c2||fluent||excellent||^yes"),
