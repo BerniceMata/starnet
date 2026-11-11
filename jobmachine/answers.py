@@ -68,7 +68,7 @@ def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
-    if re.search(r"(other|outside|secondary) employment|currently employed elsewhere|other (jobs|work commitments)", L):
+    if re.search(r"(other|outside|secondary) employment|currently employed elsewhere|other (jobs|work commitments)", L) and not re.search(r"sponsor|visa|immigration|h-?1b|authoriz", L):
         return "Yes"
     if re.search(r"commit (to )?(this role )?full[- ]time|exclusive(ly)? employ|devote full|screen monitoring|keystroke|activity monitoring", L):
         return "Yes"
