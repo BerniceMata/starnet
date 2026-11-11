@@ -96,6 +96,9 @@ def ingest(c, ats, slug, code, jobs, applied, cooldown, stats):
             st, fam, pr, why, comp = gate(j["title"], j["loc"], body, slug)
             if st in ("gate_passed", "needs_judgment") and cooldown.get(slug, "") > NOW()[:10]:
                 st, why = "gate_failed", "company cooldown"
+            md = jobq.merged_dupe(slug, slug, j["title"], j["id"], j["url"]) if st in ("gate_passed", "needs_judgment") else None
+            if md:
+                st, why = "gate_failed", md
         stats["discovered"] += 0 if row else 1
         stats["passed"] += st == "gate_passed"
         stats["judgment"] += st == "needs_judgment"

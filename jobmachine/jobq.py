@@ -42,6 +42,8 @@ FAMILIES = [  # (priority, family, title regex) - lower number = higher priority
     (4, "ops", r"revenue operations|\brevops\b|sales operations|sales ops|marketing operations|marketing ops|business operations|deal desk|\bcrm\b|gtm operations|growth operations|sales enablement|revenue analyst|gtm analyst"),
     (5, "lifecycle", r"deliverability|lifecycle|marketing automation|email (operations|marketing|infrastructure)|campaign operations"),
     (6, "health_ops", r"patient coordinator|care coordinator|clinical coordinator|program coordinator|genetic counseling assistant|patient (access|success)"),
+    (5, "data_analyst", r"data analyst|business analyst|reporting analyst|operations analyst|(?:bi|business intelligence|analytics|healthcare|clinical data|quality|data quality) analyst|analytics associate|data operations"),
+    (6, "hc_admin", r"revenue cycle|patient access|prior auth|authorization specialist|insurance verification|patient account|medical billing|billing specialist|claims (?:specialist|analyst|representative|processor)|credentialing|care navigator|patient advocate|patient (?:services|support) (?:specialist|representative)|healthcare operations|clinical operations (?:associate|specialist|coordinator)|(?:referral|intake|scheduling) (?:coordinator|specialist)"),
     (7, "tech_sales", r"sales development|business development rep|\bsdr\b|\bbdr\b|associate account executive|account executive|implementation (engineer|specialist|consultant)|solutions consultant|associate solutions architect|onboarding specialist"),
 ]
 # Optional overrides from profile.json so a different candidate can retarget the gate without editing code:
@@ -67,6 +69,17 @@ MONEY = re.compile(r"\$\s?(\d{2,3}(?:,\d{3})+(?:\.\d+)?|\d{2,3}(?:\.\d)?\s?[kK])
 HARD_SKIP_BODY = re.compile(r"commission[- ]only|door[- ]to[- ]door|bachelor'?s degree in computer science (required|is required)|must (be|have) .{0,30}(licensed|rn\b|registered nurse)|active (secret|ts/sci) clearance", re.I)
 TECH_SIGNAL = re.compile(r"\b(api|technical|automation|developer|engineer|integrat|workflow|ai\b|llm|saas|platform|data|crm|hubspot|zapier|python|sql)\b", re.I)
 COLD_CALL_MILL = re.compile(r"(\d{2,3})\+?\s*(cold )?(calls|dials) (per|a|each) day|high[- ]volume cold call", re.I)
+
+
+# Two tracks (Windows pack 2026-11-10): B = high track (tailored, higher floor), A = easy track (volume, $60K floor).
+TRACK_B = {"gtm_eng", "ai_fde_se"}
+def track_of(fam):
+    return "B" if fam in TRACK_B else "A"
+# "Manager" titles that do not mean managing people (pack section 03).
+ALLOWED_MANAGER = re.compile(r"\b(account|customer success|client success|project|program|implementation|product operations) manager\b", re.I)
+NEVER_COMPANIES = re.compile(r"hostra|accomplishr", re.I)
+ONSITE_BODY = re.compile(r"\bhybrid\b|\b\d (?:days?|x) (?:a|per) week (?:in|at) (?:the|our) office|in[- ]office (?:\d|required|expectation)|(?:on[- ]?site|in[- ]person) (?:\d|required|presence)|must (?:be able to )?commute|commutable to|within commuting distance", re.I)
+NEGATED_ONSITE = re.compile(r"not (?:a )?hybrid|no (?:office|commute)|fully remote|100% remote", re.I)
 
 
 def family_of(title):
@@ -119,11 +132,17 @@ def gate(title, loc, body, slug):
     pr, fam = family_of(title)
     if not fam:
         return "gate_failed", None, None, "not a target family", ""
-    if BANNED.search(title):
+    if NEVER_COMPANIES.search(slug):
+        return "gate_failed", fam, pr, "never apply: own employer", ""
+    if BANNED.search(ALLOWED_MANAGER.sub("", title)):
         return "gate_failed", fam, pr, "title seniority/banned word", ""
     ok, why = location_gate(loc, title)
     if not ok:
         return "gate_failed", fam, pr, "location: " + why, ""
+    if P.get("remote_only") and ONSITE_BODY.search(body):
+        if NEGATED_ONSITE.search(body):
+            return "needs_judgment", fam, pr, "remote-only: on-site words only in negated form, confirm", ""
+        return "gate_failed", fam, pr, "remote-only: posting body asks for hybrid/on-site", ""
     if LANG_REQ.search(body):
         return "gate_failed", fam, pr, "non-English language required", ""
     yrs = [int(m.group(1)) for m in HARD_YEARS.finditer(body) if int(m.group(1)) < 25]
@@ -132,7 +151,10 @@ def gate(title, loc, body, slug):
         return "gate_failed", fam, pr, f"years {min(yrs)}+ (max {MAX_YEARS})", ""
     mv = money_vals(body)
     comp = f"{int(min(mv))}-{int(max(mv))}" if mv else ""
-    floor = int(P.get("health_ops_comp_floor", 55000)) if fam == "health_ops" else int(P.get("comp_floor_base", 70000))
+    if P.get("track_floors"):
+        floor = int(P["track_floors"][track_of(fam)])
+    else:
+        floor = int(P.get("health_ops_comp_floor", 55000)) if fam == "health_ops" else int(P.get("comp_floor_base", 70000))
     if mv and max(mv) < floor:
         return "gate_failed", fam, pr, "comp below floor", comp
     if HARD_SKIP_BODY.search(body):
@@ -250,6 +272,48 @@ def ledger_job_id(url):
     return urllib.parse.unquote(url.split("?", 1)[0].split("#", 1)[0].rstrip("/").split("/")[-1]).lower()
 
 
+MERGED_LEDGER = os.path.join(DATA, "applied_merged.csv")
+_MERGED = None
+
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9]", "", re.sub(r"\b(inc|llc|ltd|co|corp|the|com|io|ai|hq)\b", "", (s or "").lower()))
+
+
+def _merged():
+    """Load the merged Mac+Windows ledger once: job ids, company+role pairs, newest date per company."""
+    global _MERGED
+    if _MERGED is None:
+        ids, roles, last = set(), set(), {}
+        if os.path.exists(MERGED_LEDGER):
+            import csv
+            for r in csv.DictReader(open(MERGED_LEDGER, encoding="utf-8")):
+                u = (r.get("job_url_or_id") or "").strip()
+                if u:
+                    ids.add(u); ids.add(ledger_job_id(u))
+                co = _norm(r.get("company"))
+                if co:
+                    roles.add((co, _norm(r.get("role"))))
+                    last[co] = max(last.get(co, ""), r.get("applied_date") or "")
+        _MERGED = (ids, roles, last)
+    return _MERGED
+
+
+def merged_dupe(company, slug, title, jid, url):
+    """Reason string if the merged ledger says this job (or this company inside 7 days) was already applied to."""
+    ids, roles, last = _merged()
+    if str(jid) in ids or url in ids:
+        return "already applied (merged ledger, job id)"
+    cos = {_norm(company), _norm(slug)} - {""}
+    if any((co, _norm(title)) in roles for co in cos):
+        return "already applied (merged ledger, company+role)"
+    since = (datetime.now(timezone.utc) - timedelta(days=7)).date().isoformat()
+    for co in cos:
+        if last.get(co, "") >= since:
+            return f"company applied {last[co]} (merged ledger, 7-day rule)"
+    return None
+
+
 def sweep_context(c):
     applied = {r["url"] for r in c.execute("SELECT url FROM ledger")}
     return {"applied_ids": {ledger_job_id(u) for u in applied},
@@ -290,6 +354,9 @@ def ingest_greenhouse(c, slug, code, data, ctx, stats):
             cd = ctx["cooldown"].get(slug)
             if st in ("gate_passed", "needs_judgment") and cd and cd > NOW()[:10]:
                 st, why = "gate_failed", f"company cooldown until {cd}"
+            md = merged_dupe(company, slug, title, jid, url) if st in ("gate_passed", "needs_judgment") else None
+            if md:
+                st, why = "gate_failed", md
         stats["evaluated"] += 1
         stats["passed"] += st == "gate_passed"
         stats["judgment"] += st == "needs_judgment"

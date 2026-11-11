@@ -9,8 +9,71 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from profile import P, fill  # noqa: E402
 
 UA = "Mozilla/5.0"
+from jobq import money_vals, family_of, track_of  # noqa: E402
+CTX = {"body": "", "fam": None}  # set per posting by plan()
+
+# Completed years by area, from the dated work history (Windows pack 02). Mitchell 2026-11-10: AI since 2021.
+YEARS = [
+    (r"manag|direct reports|people leader|supervis", 0),
+    (r"salesforce|marketo|pardot|eloqua|netsuite|workday|tableau|power ?bi|looker", 0),
+    (r"health|medical|patient|clinical|ehr|emr|epic|provider", 4),
+    (r"\bai\b|artificial intelligence|llm|automation|python|sql|data analy|analytics|prompt|machine learning", 5),
+    (r"crm|rev ?ops|revenue operations|sales operations|operations|hubspot|gohighlevel|airtable", 0),
+    (r"sales|business development|\bsdr\b|\bbdr\b|outbound|prospecting|closing", 3),
+    (r"total|professional|work experience|relevant experience|overall", 5),
+]
+
+
+def years_for(L):
+    for rx, n in YEARS:
+        if re.search(rx, L, re.I):
+            return n
+    return None
+
+
+def pick_years(opts, n):
+    """Pick the dropdown option whose range contains n."""
+    for o in opts:
+        t = o.lower()
+        nums = [int(x) for x in re.findall(r"\d+", t)]
+        if not nums:
+            if n == 0 and re.search(r"none|no experience|less than|under|^0", t):
+                return o
+            continue
+        lo = nums[0]
+        hi = nums[1] if len(nums) > 1 else (99 if re.search(r"\+|more|over|or more|above", t) else lo)
+        if re.search(r"less than|under|<", t):
+            lo, hi = 0, nums[0] - 0.01
+        if lo <= n <= hi:
+            return o
+    return None
+
+
+def salary_answer(L):
+    if re.search(r"\bote\b|on[- ]target|commission|current (salary|compensation|pay|base)|hourly|per hour|monthly", L):
+        return ""  # hold: pack says OTE/commission/hourly/current pay wording needs Mitchell
+    floor = int((P.get("track_floors") or {}).get(track_of(CTX["fam"]) if CTX["fam"] else "B", 100000))
+    mv = money_vals(CTX["body"])
+    n = max(floor, int(round((min(mv) + max(mv)) / 2, -3))) if mv else floor
+    return f"${n:,}"
+
+
 def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
+    if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
+        return salary_answer(L)
+    if re.search(r"(other|outside|secondary) employment|currently employed elsewhere|other (jobs|work commitments)", L):
+        return "Yes"
+    if re.search(r"commit (to )?(this role )?full[- ]time|exclusive(ly)? employ|devote full|screen monitoring|keystroke|activity monitoring", L):
+        return "Yes"
+    if re.search(r"(what|how much).{0,30}(percent|%).{0,20}travel|travel.{0,30}(percent|%)", L) and not opts:
+        return P.get("max_travel", "")
+    if re.search(r"driver'?s licen[sc]e", L):
+        return P.get("drivers_license", "")
+    if re.search(r"reliable (transportation|vehicle)|own (a )?(car|vehicle)|access to a (car|vehicle)", L):
+        return P.get("own_car", "")
+    if re.search(r"\bgpa\b|grade point", L):
+        return P.get("gpa", "")
     if P.get("portfolio_url") and re.search(r"portfolio|personal (web)?site|^website|website url|other website|blog", L) and not re.search(r"user ?name|handle", L):
         return P["portfolio_url"]
     if re.search(r"github", L):
@@ -140,6 +203,9 @@ def pick(options, pref):
 def plan(key):
     _, slug, jid = key.split(":")
     d = fetch(slug, jid)
+    import html as _h
+    CTX["body"] = re.sub(r"<[^>]+>", " ", _h.unescape(d.get("content", "")))
+    CTX["fam"] = family_of(d.get("title", ""))[1]
     loc = (d.get("location") or {}).get("name", "")
     dfw = bool(HOME_METRO.search(loc))  # role is in the candidate's home metro
     out = {"key": key, "url": d.get("absolute_url"), "title": d.get("title"), "location": loc, "fields": [], "unknown": [], "blockers": []}
@@ -180,21 +246,10 @@ def plan(key):
         if re.search(r"street address|^address$|mailing address|home address|zip|postal code", L) and req:
             out["blockers"].append(f"needs-address: {label}")
             continue
-        if re.search(r"years", L) and re.search(r"how many|number of|years of", L) and not re.search(r"datarails|fp&a|anaplan|marketo|salesforce", L):
-            if re.search(r"salesforce|marketo|cybersecurity|fintech|payments|forex|crypto|security", L):
-                ans = "0"
-            elif re.search(r"b2b saas|saas", L):
-                ans = P.get("years_similar", "1")
-            elif re.search(r"(llm|ai|automation)", L):
-                ans = P.get("years_similar", "1")
-                if opts:
-                    ans = pick(opts, r"less than 1|<\s?1|0-1|under 1|^1\b|1 year|1-2|1–2")
-            elif re.search(r"(sales|outbound|sdr|bdr|business development)", L):
-                ans = P.get("years_similar", "1")
-            else:
-                ans = "1-3 years" if opts else None
-            if opts:
-                ans = pick(opts, r"^1|1-2|0-2|1-3|less than 2|under 2|^0") or None
+        if re.search(r"years", L) and re.search(r"how many|number of|years of|years'? experience", L):
+            n = years_for(L)
+            if n is not None:
+                ans = (pick_years(opts, n) if opts else str(n))
         if ans is None and re.search(r"hybrid|in[- ]office|on[- ]?site|commute", L):
             ans = "No"
             if opts and ans:
