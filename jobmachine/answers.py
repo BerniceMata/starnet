@@ -16,7 +16,7 @@ CTX = {"body": "", "fam": None}  # set per posting by plan()
 YEARS = [
     (r"manag|direct reports|people leader|supervis", 0),
     (r"marketo|pardot|eloqua|netsuite|workday|looker", 0),
-    (r"salesforce|sales navigator", 0),  # Mitchell 2026-11-10: used, under 1 year -> picks "less than 1" ranges
+    (r"salesforce|sales navigator", 0.5),  # Mitchell 2026-11-10: used, under 1 year -> picks "less than 1" ranges
     (r"tableau|power ?bi|power automate|power apps|power platform|microsoft 365|sharepoint", 1),
     (r"health|medical|patient|clinical|ehr|emr|epic|provider", 4),
     (r"\bai\b|artificial intelligence|llm|automation|python|sql|data analy|analytics|prompt|machine learning", 5),
@@ -42,6 +42,8 @@ def pick_years(opts, n):
         nums = [int(x) for x in re.findall(r"\d+", t)]
         if not nums:
             if n == 0 and re.search(r"none|no experience|less than|under|^0", t):
+                return o
+            if 0 < n < 1 and re.search(r"less than|under|some|beginner", t):
                 return o
             continue
         lo = nums[0]
@@ -313,7 +315,7 @@ def plan(key):
         if re.search(r"years", L) and re.search(r"how many|number of|years of|years'? experience", L) and not re.search(r"describe|explain|tell us", L):
             n = years_for(L)
             if n is not None:
-                ans = (pick_years(opts, n) if opts else str(n))
+                ans = (pick_years(opts, n) if opts else ("Less than 1 year" if 0 < n < 1 else str(n)))
         if ans is None and re.search(r"hybrid|in[- ]office|on[- ]?site|commute", L):
             ans = "Yes" if dfw else "No"  # Mitchell 2026-11-10: hybrid/on-site is fine inside DFW
             if opts and ans:
