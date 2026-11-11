@@ -71,7 +71,7 @@ def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
-    if re.search(r"refer", L) and re.search(r"name|who|indicate|relationship", L) and not opts:
+    if re.search(r"\brefer(red|ral)?\b", L) and re.search(r"name|who|indicate|relationship", L) and not opts:
         return "N/A"
     if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city), state\s*\??$", L):
         return P.get("location_short", "Dallas, TX")
