@@ -67,8 +67,29 @@ def salary_answer(L):
     return f"${n:,}"
 
 
+def why_answer():
+    """Short, truthful 'why this role/company' answer built from confirmed facts. Never claims company-specific knowledge."""
+    co, title, fam = CTX.get("company") or "your team", CTX.get("title") or "this role", CTX.get("fam") or ""
+    health = re.search(r"health|clinic|patient|care|medical|therap|pharm", (co + " " + title + " " + CTX.get("body", "")[:3000]).lower())
+    core = ("At HostraGroup I managed 500+ leads through the pipeline in GoHighLevel and Airtable and built the structured follow-up "
+            "system behind it, and at Accomplishr I build AI tools like Cami that the team uses every day.")
+    if fam in ("ai_fde_se", "entry_swe", "ai_trainer", "gtm_eng"):
+        hook = f"The {title} role at {co} is the work I already do: taking a real business problem and shipping an AI or automation system that people actually use."
+    elif fam in ("data_analyst", "heads_down"):
+        hook = f"The {title} role at {co} is the kind of heads-down systems and data work I do best: turning messy operations into clean, reliable processes and reporting."
+    else:
+        hook = f"The {title} role at {co} fits how I work: owning a process end to end and making sure nothing falls through the cracks."
+    tail = (" I also spent four years supporting clinical teams as a medical assistant and hold a Healthcare Studies degree, so healthcare workflows are familiar ground."
+            if health else " I learn new tools and domains fast and I care about the outcome, not just the task list.")
+    return hook + " " + core + tail
+
+
 def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
+    if re.search(r"why (are you|do you want|would you like|you are)|what (excites|interests|draws) you|why .{0,30}(interested|excited)|why (this|our) (role|company|team)|why .{0,20}(join|work (at|for|with))|interest(ed)? in (this|the) (role|position|company)", L) and not opts:
+        return why_answer()
+    if re.fullmatch(r"\s*(your )?(full|legal) name\s*\??", L) or L.strip() in ("name", "your name"):
+        return P.get("full_name", P["first_name"] + " " + P["last_name"])
     if re.search(r"(contractual obligations|non-?compete|restrictive covenant).{0,200}(impact|impede|interfere|prevent|restrict)", L):
         return pick(opts, r"^no\b") if opts else "No"
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
@@ -354,6 +375,7 @@ def plan(key):
     import html as _h
     CTX["body"] = re.sub(r"<[^>]+>", " ", _h.unescape(d.get("content", "")))
     CTX["fam"] = family_of(d.get("title", ""))[1]
+    CTX["title"] = d.get("title", ""); CTX["company"] = (d.get("company_name") or slug.replace("-", " ").title())
     loc = (d.get("location") or {}).get("name", "")
     dfw = bool(HOME_METRO.search(loc))  # role is in the candidate's home metro
     out = {"key": key, "url": d.get("absolute_url"), "title": d.get("title"), "location": loc, "fields": [], "unknown": [], "blockers": []}

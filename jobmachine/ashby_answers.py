@@ -55,6 +55,7 @@ def answer_for(title, opts, loc):
 def plan(key):
     _, slug, jid = key.split(":", 2)
     jp = fetch(slug, jid)
+    A.CTX.update(title=jp["title"], fam=A.family_of(jp["title"])[1], body="", company=slug.replace("-careers", "").replace("-", " ").title())
     out = {"key": key, "url": f"https://jobs.ashbyhq.com/{slug}/{jid}/application", "title": jp["title"], "location": jp.get("locationName"),
            "fields": [], "unknown": [], "blockers": []}
     for s in jp["applicationForm"]["sections"]:
