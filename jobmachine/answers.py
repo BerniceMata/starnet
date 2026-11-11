@@ -138,7 +138,11 @@ def private_answer(L, opts=None):
     if re.search(r"what hours are you available|hours (of )?availability", L) and not opts:
         return "Full-time, and flexible across US time zones"
     if re.search(r"(other|outside|secondary) employment|currently employed elsewhere|other (jobs|work commitments)", L) and not re.search(r"sponsor|visa|immigration|h-?1b|authoriz", L):
-        return "Yes"
+        return ""  # Mitchell 2026-11-11: don't volunteer other jobs; never answer falsely -> hold for him
+    if re.search(r"convicted|pleaded guilty|criminal (offense|record|conviction)|felony|misdemeanor", L):
+        if re.search(r"explain|describe|if (yes|you have)", L) and not opts:
+            return "N/A"
+        return pick(opts, r"^no\b|^n/?a") if opts else "No"  # Mitchell 2026-11-11: never convicted
     if re.search(r"commit (to )?(this role )?full[- ]time|exclusive(ly)? employ|devote full|screen monitoring|keystroke|activity monitoring", L):
         return "Yes"
     if re.search(r"(able|willing) to travel up to \d+ ?%", L):
