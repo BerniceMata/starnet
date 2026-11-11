@@ -15,7 +15,9 @@ CTX = {"body": "", "fam": None}  # set per posting by plan()
 # Completed years by area, from the dated work history (Windows pack 02). Mitchell 2026-11-10: AI since 2021.
 YEARS = [
     (r"manag|direct reports|people leader|supervis", 0),
-    (r"salesforce|marketo|pardot|eloqua|netsuite|workday|tableau|power ?bi|looker", 0),
+    (r"marketo|pardot|eloqua|netsuite|workday|looker", 0),
+    (r"salesforce|sales navigator", 0),  # Mitchell 2026-11-10: used, under 1 year -> picks "less than 1" ranges
+    (r"tableau|power ?bi|power automate|power apps|power platform|microsoft 365|sharepoint", 1),
     (r"health|medical|patient|clinical|ehr|emr|epic|provider", 4),
     (r"\bai\b|artificial intelligence|llm|automation|python|sql|data analy|analytics|prompt|machine learning", 5),
     (r"software (engineering|development)|professional (software|engineering)|production code", 1),
@@ -126,6 +128,10 @@ def private_answer(L, opts=None):
             if not opts:
                 return "Intermediate"
             return pick(opts, r"intermediate|proficient|moderate|^3\b|comfortable") or ""
+        if pf.get("beginner") and re.search(pf["beginner"], L):
+            if not opts:
+                return "Beginner"
+            return pick(opts, r"beginner|basic|novice|familiar|^2\b|some") or ""
     if re.search(r"\bgpa\b|grade point", L):
         return P.get("gpa", "")
     if P.get("portfolio_url") and re.search(r"portfolio|personal (web)?site|^website|website url|other website|blog", L) and not re.search(r"user ?name|handle", L):
@@ -181,7 +187,7 @@ BANK = [
     (r"(eligible|authori[sz]ed|right) to work[^?]{0,80}without[^?]{0,30}sponsorship|(currently )?have (work|employment) authori[sz]ation", "<<work_authorized>>", r"^<<work_authorized_rx>>"),
     (r"sponsor", "<<needs_sponsorship>>", r"^<<needs_sponsorship_rx>>\b"),
     (r"relocation (assistance|package|support)|require relocation", "No", r"^no\b"),
-    (r"(experience|years) (with|using|in) (datarails|anaplan|adaptive|netsuite|sap|workday|marketo|salesforce|pardot|eloqua|tableau|looker|snowflake|dbt|sql)|fp&a|forex|crypto|i-gaming|pharmaceutical companies", "No", r"^no\b|^0|none|less than"),
+    (r"(experience|years) (with|using|in) (datarails|anaplan|adaptive|netsuite|sap|workday|marketo|pardot|eloqua|looker|snowflake|dbt)|fp&a|forex|crypto|i-gaming|pharmaceutical companies", "No", r"^no\b|^0|none|less than"),
     (r"^first name$|preferred first name|what is your preferred first name|^name \(the name you go by\)$|^preferred name", "<<first_name>>", None),
     (r"^last name$|preferred last name", "<<last_name>>", None),
     (r"^email", "<<email>>", None),
@@ -221,7 +227,10 @@ BANK = [
     (r"bachelor'?s degree|4-year degree|undergraduate degree|highest level of education", "<<degree_level>>", r"bachelor|yes"),
     (r"computer science degree|degree in computer science", "No", r"^no\b"),
     (r"english", "Native / fluent", r"native||c2||fluent||excellent||^yes"),
-    (r"salesforce", "No", r"^no\b|0|none"),
+    (r"salesforce|sales navigator|power ?bi|tableau|power automate|power apps|microsoft 365", "Yes", r"^yes"),
+    (r"contract|1099|part[- ]time|temporary|freelance", "<<contract_ok>>", r"^yes"),
+    (r"(work|available|comfortable|willing).{0,60}(time ?zones?|eastern|pacific|est\b|pst\b|overlap)", "<<other_timezones_ok>>", r"^yes"),
+    (r"night|weekend|evening|overnight|shift", "<<nights_weekends_ok>>", r"^yes"),
     (r"years of (experience|b2b|saas)|how many years", None, None),  # handled specially below
     (r"remote", "Yes", r"^yes"),
     (r"hybrid|in[- ]office|on[- ]site", None, None),  # depends on DFW; handled specially
@@ -306,9 +315,9 @@ def plan(key):
             if n is not None:
                 ans = (pick_years(opts, n) if opts else str(n))
         if ans is None and re.search(r"hybrid|in[- ]office|on[- ]?site|commute", L):
-            ans = "No"
+            ans = "Yes" if dfw else "No"  # Mitchell 2026-11-10: hybrid/on-site is fine inside DFW
             if opts and ans:
-                ans = pick(opts, r"^no\b")
+                ans = pick(opts, r"^yes\b" if dfw else r"^no\b")
         if ans is None:
             for rx, a, pref in BANK:
                 if a is None:

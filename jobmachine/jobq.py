@@ -65,7 +65,7 @@ CITY_IN_TITLE = re.compile(r"\(([A-Z][a-zA-Z .]+),\s*([A-Z]{2})\)")
 HOME_METRO = re.compile(P["home_metro_regex"], re.I)  # the candidate's home metro (on-site/hybrid allowed here)
 HOME_STATE = re.compile(r"\b(%s|%s)\b" % (re.escape(P["state"]), re.escape(P["state_abbr"])), re.I)
 HOME_METRO_FALSE = re.compile(P["home_metro_exclude_regex"], re.I) if P.get("home_metro_exclude_regex") else None
-NONUS = re.compile(r"\b(indonesia|jakarta|taiwan|taipei|thailand|bangkok|vietnam|macedonia|ukraine|latin america|latam|eu|europe|emea|apac|nigeria|kenya|south africa|egypt|uae|dubai|saudi|qatar|pakistan|chile|peru|uruguay|romania|serbia|bulgaria|czech|hungary|greece|turkey|new zealand|china|shanghai|beijing|canada|uk|united kingdom|london|emea|apac|india|germany|europe|mexico|brazil|latam|australia|ireland|poland|spain|france|netherlands|philippines|singapore|japan|toronto|vancouver|montreal|portugal|argentina|colombia|israel|berlin|dublin|amsterdam|paris|bangalore|bengaluru|tokyo|sydney|seoul|ontario|british columbia|hong kong|malaysia|switzerland|sweden|italy|denmark|belgium|slovakia|costa rica|cri)\b", re.I)
+NONUS = re.compile(r"\b(t[uü]rkiye|istanbul|barcelona|madrid|warsaw|wroc[lł]aw|krak[oó]w|mississauga|ottawa|calgary|\bpl\b|lisbon|munich|zurich|stockholm|copenhagen|oslo|helsinki|prague|budapest|bucharest|sofia|belgrade|kyiv|lviv|tallinn|riga|vilnius|cairo|lagos|nairobi|manila|seoul|hong kong|kuala lumpur|bogot[aá]|medell[ií]n|buenos aires|s[aã]o paulo|lima|santiago|quito|montevideo|indonesia|jakarta|taiwan|taipei|thailand|bangkok|vietnam|macedonia|ukraine|latin america|latam|eu|europe|emea|apac|nigeria|kenya|south africa|egypt|uae|dubai|saudi|qatar|pakistan|chile|peru|uruguay|romania|serbia|bulgaria|czech|hungary|greece|turkey|new zealand|china|shanghai|beijing|canada|uk|united kingdom|london|emea|apac|india|germany|europe|mexico|brazil|latam|australia|ireland|poland|spain|france|netherlands|philippines|singapore|japan|toronto|vancouver|montreal|portugal|argentina|colombia|israel|berlin|dublin|amsterdam|paris|bangalore|bengaluru|tokyo|sydney|seoul|ontario|british columbia|hong kong|malaysia|switzerland|sweden|italy|denmark|belgium|slovakia|costa rica|cri)\b", re.I)
 STATE_ONLY_REMOTE = re.compile(r"remote[,\s-]*(?:\(|-)?\s*(california|colorado|new york|washington|oregon|florida|georgia|illinois|massachusetts|arizona|utah|ohio|wisconsin|virginia|pennsylvania|new jersey|north carolina|tennessee|ca|co|ny|wa|fl|ga|il|ma|az|ut|oh|wi|va|pa|nj|nc|tn)\b|(california|colorado|new york|washington|oregon|florida|georgia|illinois|massachusetts|arizona|utah|ohio|wisconsin|virginia|pennsylvania|new jersey|north carolina|tennessee)[- ]remote", re.I)
 HARD_YEARS = re.compile(r"(\d{1,2})\s*\+?\s*(?:-|–|to)?\s*\d{0,2}\+?\s*years?[^.]{0,90}?(experience|in |of |as |closing|selling|quota|software)", re.I)
 MONEY = re.compile(r"\$\s?(\d{2,3}(?:,\d{3})+(?:\.\d+)?|\d{2,3}(?:\.\d)?\s?[kK])")
@@ -146,6 +146,8 @@ def gate(title, loc, body, slug):
         bad = BANNED.search(ALLOWED_MANAGER.sub("", title))
     if bad:
         return "gate_failed", fam, pr, "title seniority/banned word", ""
+    if re.search(r"\b(canada|uk|emea|apac|latam|europe|india|mexico|brazil|poland|spain|germany|philippines|australia|t[uü]rkiye)\b", title, re.I) and not re.search(r"\b(us|usa|united states)\b", title, re.I):
+        return "gate_failed", fam, pr, "location: non-US (title)", ""
     ok, why = location_gate(loc, title)
     if not ok:
         return "gate_failed", fam, pr, "location: " + why, ""
@@ -177,7 +179,7 @@ def gate(title, loc, body, slug):
     if fam == "tech_sales":
         # fallback lane: deterministic pre-screen, then Opus judgment
         if yrs and min(yrs) >= 4 and re.search(r"quota|closing|closed|full[- ]cycle", body, re.I):
-            return "gate_failed", fam, pr, "3+ yrs quota/closing required", comp
+            return "gate_failed", fam, pr, "4+ yrs quota/closing required", comp
         if COLD_CALL_MILL.search(body):
             return "gate_failed", fam, pr, "high-volume cold-calling role", comp
         if not mv or max(mv) < FALLBACK_COMP:

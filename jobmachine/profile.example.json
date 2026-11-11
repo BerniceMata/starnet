@@ -1,6 +1,5 @@
 {
   "_note": "Copy to profile.json (git-ignored) and replace every value. Only facts that are true and that you are willing to put on an application go here. Leave a key empty to make the machine hold any form that needs it.",
-
   "first_name": "Ada",
   "last_name": "Example",
   "email": "ada@example.com",
@@ -9,14 +8,12 @@
   "github_url": "",
   "github_username": "",
   "pronouns": "",
-
   "city": "Austin",
   "state": "Texas",
   "state_abbr": "TX",
   "country": "United States",
   "timezone": "Central",
   "home_metro_regex": "\\b(austin|round rock|cedar park)\\b",
-
   "current_employer": "Example Co",
   "current_title": "Operations Associate",
   "degree_level": "Bachelor's",
@@ -24,7 +21,6 @@
   "major": "Business",
   "nationality": "",
   "citizenship_option": "",
-
   "work_authorized": "Yes",
   "needs_sponsorship": "No",
   "us_citizen": "",
@@ -35,18 +31,18 @@
   "security_clearance": "No",
   "vc_pe_backed_employers": "",
   "vacation_next_month": "",
-
   "years_similar": "1",
   "years_similar_text": "About 1 year",
   "ai_familiarity": "4",
   "availability": "Immediately available; can start within 2 weeks.",
   "how_heard": "Company website",
-
   "salary_text": "I'm targeting $70K+ base depending on how the role is structured.",
   "salary_number": "70000",
   "comp_floor_base": 70000,
   "comp_floor_ote": 105000,
   "health_ops_comp_floor": 55000,
-
-  "resume_path": "data/resume.pdf"
+  "resume_path": "data/resume.pdf",
+  "contract_ok": "",
+  "other_timezones_ok": "",
+  "nights_weekends_ok": ""
 }
