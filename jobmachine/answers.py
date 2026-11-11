@@ -128,7 +128,7 @@ def private_answer(L, opts=None):
     if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city), state\s*\??$", L):
         return P.get("location_short", "Dallas, TX")
     if re.fullmatch(r"\s*(current )?city\s*\??", L):
-        return P.get("city", "Dallas")
+        return P.get("address_city", P.get("city", "Dallas"))  # matches the street address and ZIP
     if re.search(r"comfortable with the location requirement|able to meet the location requirement", L):
         return "Yes"
     if re.search(r"legally (eligible|authorized|able) (for|to) (employment|work)", L):
