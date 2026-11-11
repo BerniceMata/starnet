@@ -86,9 +86,9 @@ def why_answer():
 
 def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
-    if re.search(r"why (are you|do you want|would you like|you are)|what (excites|interests|draws) you|why .{0,30}(interested|excited)|why (this|our) (role|company|team)|why .{0,20}(join|work (at|for|with))|interest(ed)? in (this|the) (role|position|company)", L) and not opts:
+    if re.search(r"why does (this|the) (position|role|job|opportunity).{0,40}interest you|what interests you about|why (are you|do you want|would you like|you are)|what (excites|interests|draws) you|why .{0,30}(interested|excited)|why (this|our) (role|company|team)|why .{0,20}(join|work (at|for|with))|interest(ed)? in (this|the) (role|position|company)", L) and not opts:
         return why_answer()
-    if re.fullmatch(r"\s*(your )?(full|legal) name\s*\??", L) or L.strip() in ("name", "your name"):
+    if re.fullmatch(r"\s*(your )?((full|legal) name|legal first and last name|first and last name)\s*\??", L) or L.strip() in ("name", "your name"):
         return P.get("full_name", P["first_name"] + " " + P["last_name"])
     if re.search(r"(contractual obligations|non-?compete|restrictive covenant).{0,200}(impact|impede|interfere|prevent|restrict)", L):
         return pick(opts, r"^no\b") if opts else "No"
@@ -114,7 +114,19 @@ def private_answer(L, opts=None):
         return ""
     if re.search(r"^legal address - country|^country of residence", L):
         return pick(opts, r"^united states$|^united states of america|^usa?$") if opts else "United States"
-    if re.search(r"over the age of 18|at least 18|18 years of age", L):
+    if re.search(r"(based|located|live) in the .{0,10}(est|edt|eastern|pst|pdt|pacific|mst|mountain)\b.{0,20}time ?zone", L) and not re.search(r"central|cst|cdt", L):
+        return pick(opts, r"^no$|^no\b") if opts else "No"
+    if opts and any(re.search(r"will not require sponsorship", o, re.I) for o in opts):
+        return pick(opts, r"will not require sponsorship")
+    if re.search(r"sponsor", L) and opts and any(re.search(r"not require sponsorship|do not (need|require)", o, re.I) for o in opts):
+        return pick(opts, r"(will )?not require sponsorship|do not (need|require)")
+    if re.search(r"flexible hours|across time zones|support collaboration across", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"willing to work from the required location|able to work from the (required|listed) location", L):
+        return pick(opts, r"^yes") if opts else "Yes"
+    if re.search(r"(current )?(legal|home|mailing|residential) address$", L) and not opts:
+        return f'{P["address_line"]}, {P["address_city"]}, {P.get("state_abbr", "TX")} {P["address_zip"]}'
+    if re.search(r"over the age of 18|at least 18|18 years of age|eighteen years of age|18 or older", L):
         return pick(opts, r"^yes") if opts else "Yes"
     if re.search(r"high school diploma|\bged\b", L):
         return pick(opts, r"^yes") if opts else "Yes"
