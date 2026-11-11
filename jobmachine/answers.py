@@ -71,6 +71,14 @@ def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
+    if re.search(r"(record|notetaker|transcri).{0,60}interview|interview.{0,60}(record|notetaker|transcri)", L) and P.get("ai_interview_recording_ok"):
+        return pick(opts, r"consent|^yes|agree|accept") if opts else "Yes"
+    if re.search(r"privacy (act )?notice|privacy policy|applicant privacy|ccpa", L) and opts:
+        return pick(opts, r"acknowledge|^yes|agree|accept|read|understand")
+    if re.search(r"ai policy|policy for (ai|hiring)", L) and P.get("employer_ai_policy_ok"):
+        return pick(opts, r"^yes|agree|accept|acknowledge") if opts else "Yes"
+    if re.search(r"tobacco|smok|nicotine", L) and P.get("smoke_free"):
+        return pick(opts, r"non-?smoker|^yes|agree") if opts else "Yes"
     if re.search(r"\brefer(red|ral)?\b", L) and re.search(r"name|who|indicate|relationship", L) and not opts:
         return "N/A"
     if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city), state\s*\??$", L):
@@ -267,7 +275,8 @@ _EEO_DECLINE = r"decline|prefer not|don't wish|do not wish|choose not|not to ans
 # EEO answers are voluntary and personal: option regexes come from profile.json "eeo"; default is to decline.
 EEO = [(rx, (P.get("eeo") or {}).get(k) or _EEO_DECLINE) for k, rx in [
     ("gender", r"gender"), ("hispanic", r"hispanic|latino"), ("race", r"race|ethnicit"),
-    ("veteran", r"veteran"), ("disability", r"disabilit")]]
+    ("veteran", r"veteran"), ("disability", r"disabilit"),
+    ("orientation", r"sexual orientation|lgbtq|lgbt")]]
 
 # Fill the <<key>> tokens from the profile. An answer the profile leaves empty becomes "" = hold the form.
 BANK = [(rx, fill(a) if a is not None else None, fill(pref) if pref else pref) for rx, a, pref in BANK]
