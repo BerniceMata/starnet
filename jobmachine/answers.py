@@ -71,6 +71,18 @@ def private_answer(L, opts=None):
     """Answers from the private profile. None = no rule; '' = leave blank (or unknown if required)."""
     if re.search(r"salary|compensation expectation|expected (annual )?(base )?(salary|compensation|pay)|desired (salary|pay|compensation)|pay expectation|expectations for total compensation", L) and not opts:
         return salary_answer(L)
+    if re.fullmatch(r"\s*(current )?location\s*\??", L) or re.search(r"^(city|current city)(, state)?\s*\??$", L):
+        return P.get("location_short", "Dallas, TX")
+    if re.search(r"comfortable with the location requirement|able to meet the location requirement", L):
+        return "Yes"
+    if re.search(r"legally (eligible|authorized|able) (for|to) (employment|work)", L):
+        return "Yes"
+    if re.search(r"workflow automation (platform|tool)|integration platforms?|ipaas|automation tools? (have you|do you)", L):
+        return "Yes" if opts else "Yes. Make, n8n and Zapier, plus GoHighLevel workflows and Airtable automations."
+    if re.search(r"when (could|can|would) you start|start date|earliest (start|available)", L) and not opts:
+        return "Immediately"
+    if re.search(r"what hours are you available|hours (of )?availability", L) and not opts:
+        return "Full-time, and flexible across US time zones"
     if re.search(r"(other|outside|secondary) employment|currently employed elsewhere|other (jobs|work commitments)", L) and not re.search(r"sponsor|visa|immigration|h-?1b|authoriz", L):
         return "Yes"
     if re.search(r"commit (to )?(this role )?full[- ]time|exclusive(ly)? employ|devote full|screen monitoring|keystroke|activity monitoring", L):
