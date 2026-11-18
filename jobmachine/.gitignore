@@ -1,0 +1,8 @@
+# Private: never commit. profile.json holds the candidate's personal facts;
+# data/ holds the queue DB (applied ledger), per-job answer overrides and the resume.
+profile.json
+data/
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
